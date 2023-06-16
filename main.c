@@ -1,9 +1,13 @@
-#define SHC_RL_BUFSIZE 1024
 #include<stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define SHC_RL_BUFSIZE 1024
+
+#define SHC_TOK_BUFSIZE 64
+#define SHC_TOK_DELIM " \t\r\n\a" 
 
 char *lsh_read_line (){
     int bufsize = SHC_RL_BUFSIZE;
@@ -13,7 +17,7 @@ char *lsh_read_line (){
 
     if (!buffer) {
         fprintf(stderr, "shellc: allocation error\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     while(1){
@@ -34,10 +38,38 @@ char *lsh_read_line (){
             buffer = realloc(buffer,bufsize);
             if(!buffer){
                 fprintf(stderr, "shc: allocation error\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
         }
         
     }
 
 }
+ char** SHC_split_line(char *line){
+    int bufsize = SHC_TOK_BUFSIZE, position = 0;
+    char** tokens = malloc(bufsize * sizeof(char));
+    char* token;
+
+    if (!tokens) {
+        fprintf(stderr, "SHC: allocation error");
+        exit(EXIT_FAILURE);
+    }
+
+    token = strtok(line, SHC_TOK_DELIM);
+    while (token != NULL) {
+        tokens[position] = token;
+        position++;
+
+        if (position >= bufsize) {
+            bufsize += SHC_TOK_BUFSIZE;
+            tokens = realloc(tokens, bufsize * sizeof(char*));
+            if (!tokens) {
+                fprintf(stderr, "shc: allocation error");
+                exit(EXIT_FAILURE);
+            }
+        }
+        token = strtok(NULL, SHC_TOK_DELIM);
+    }
+    tokens[position] = NULL;
+    return tokens;
+ }
