@@ -9,6 +9,15 @@
 #define SHC_TOK_BUFSIZE 64
 #define SHC_TOK_DELIM " \t\r\n\a" 
 
+int main(int argc, char **argv){
+    // load config files if any
+
+    // run command loop
+    shc_loop();
+
+    // Perform any shutdown/cleanup.
+    return EXIT_SUCCESS;
+}
 
 char *lsh_read_line (){
     int bufsize = SHC_RL_BUFSIZE;
@@ -98,3 +107,75 @@ char *lsh_read_line (){
 
     return 1;
  }
+
+// function declarations of builtin shell commands:
+
+ int shc_cd(char **args);
+ int shc_help(char** args);
+ int shc_exit(char **args);
+
+//  list of builtin commands, followed by their corresponding functions 
+
+ char *builtin_str[] = {
+    "cd",
+    "help",
+    "exit"
+ };
+
+ int (*builtin_func[]) (char **) = {
+    &shc_cd,
+    &shc_help,
+    &shc_exit
+ };
+
+ int shc_num_builtins() {
+    return sizeof(builtin_str) / sizeof(char *);
+ }
+
+//  Builtin function implementions
+
+int shc_cd(char **args){
+    if (args[1] == NULL) {
+        fprintf(stderr, "shc: expceted argument to \"cd\"\n");
+    } else{
+        if (chdir(args[1]) != 0) {
+            perror("shc");
+        }
+    }
+    return 1;
+}
+
+int shc_help(char** args){
+    int i;
+    printf("ShellC\n");
+    printf("type program names and arguments, and hit enter. \n");
+    printf("the following are built-in:\n");
+
+    for(i = 0; i < shc_num_builtins(); i++) {
+        printf(" %s\n, builtin_str[i]");
+    }
+
+    printf("use the man command for information on other programs.\n");
+}
+
+int shc_exit(char** args){
+    return 0;
+}
+
+int shc_execute(char** args){
+    int i;
+
+    if (args[0] == NULL) {
+        //an empty command was entered
+        return 1;
+    }
+
+    for (i = 0; i < shc_num_builtins(); i++) {
+        if (strcmp(args[0], builtin_str[i]) == 0) {
+            return (*builtin_func[i])(args);
+
+        }
+    }
+
+    return shc_launch(args);
+}
