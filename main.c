@@ -9,6 +9,7 @@
 #define SHC_TOK_BUFSIZE 64
 #define SHC_TOK_DELIM " \t\r\n\a" 
 
+
 char *lsh_read_line (){
     int bufsize = SHC_RL_BUFSIZE;
     int position = 0;
@@ -41,10 +42,9 @@ char *lsh_read_line (){
                 exit(EXIT_FAILURE);
             }
         }
-        
     }
-
 }
+
  char** SHC_split_line(char *line){
     int bufsize = SHC_TOK_BUFSIZE, position = 0;
     char** tokens = malloc(bufsize * sizeof(char));
@@ -72,4 +72,29 @@ char *lsh_read_line (){
     }
     tokens[position] = NULL;
     return tokens;
+ }
+
+ int shc_launch (char** args) {
+    pid_t pid, wpid;
+    int status;
+
+    pid = fork();
+
+    if (pid == 0) {
+        //child process
+        if(execvp(args[0], args) == -1){
+            perror("shc");
+        }
+        exit(EXIT_FAILURE);
+    } else if (pid < 0) {
+        //error forking
+        perror("shc");
+    } else {
+        //parent process
+        do{
+            wpid = waitpid(pid, &status, WUNTRACED);
+        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    }
+
+    return 1;
  }
